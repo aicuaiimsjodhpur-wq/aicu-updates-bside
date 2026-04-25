@@ -294,7 +294,7 @@ body.edit-mode .sec-bar span[contenteditable="true"]:focus{background:rgba(255,2
     <div id="gh-sync-pill" onclick="openGithubModal()" style="font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 9.5px; font-weight: 700; padding: 4px 9px; border-radius: 5px; border: 1px solid rgba(200, 134, 10, 0.5); cursor: pointer; background: rgba(200, 134, 10, 0.2); color: var(--gold); white-space: nowrap; display: inline-block;" title="Click to configure GitHub sync">⏳ saving…</div>
     <div id="protocol-warn" style="display:none;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(212,115,10,0.25);border:1px solid rgba(212,115,10,0.5);color:#f0a040;white-space:nowrap;" title="GitHub sync requires https://">⚠️ file://</div>
   </div>
-  <div class="tb-date" id="tb-date-pill" contenteditable="true" spellcheck="false" title="Click to edit date">24 APR 2026</div>
+  <div class="tb-date" id="tb-date-pill" contenteditable="true" spellcheck="false" title="Click to edit date">25 APR 2026</div>
 </div>
 
 <!-- API KEY BANNER -->
@@ -2007,7 +2007,7 @@ pushToGithub = async function() {
 };
 </script>
 
-<div id="save-toast" style="position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: rgb(26, 95, 168); color: rgb(255, 255, 255); font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 11px; padding: 9px 18px; border-radius: 8px; z-index: 9999; box-shadow: rgba(0, 0, 0, 0.35) 0px 4px 20px; transition: opacity 0.4s; pointer-events: none; opacity: 0;">✏️ Full edit mode — click anything to edit</div><div id="gh-modal" style="display: none; position: fixed; inset: 0px; z-index: 800; align-items: center; justify-content: center; padding: 20px;">
+<div id="save-toast" style="position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: rgb(26, 122, 74); color: rgb(255, 255, 255); font-family: &quot;JetBrains Mono&quot;, monospace; font-size: 11px; padding: 9px 18px; border-radius: 8px; z-index: 9999; box-shadow: rgba(0, 0, 0, 0.35) 0px 4px 20px; transition: opacity 0.4s; pointer-events: none; opacity: 0;">✅ Auto-saved to GitHub</div><div id="gh-modal" style="display: none; position: fixed; inset: 0px; z-index: 800; align-items: center; justify-content: center; padding: 20px;">
       <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);" onclick="closeGhModal()"></div>
       <div style="position:relative;background:#fff;border-radius:12px;width:100%;max-width:460px;box-shadow:0 12px 60px rgba(0,0,0,0.3);z-index:1;overflow:hidden;">
         <div style="background:#0d1f38;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;">
