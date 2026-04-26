@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICU Investigations Chart — AIIMS Jodhpur</title>
+<style>
+/* ── FONTS ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:       #0a0e17;
+  --surface:  #111827;
+  --card:     #1a2236;
+  --border:   #2a3550;
+  --accent:   #3b82f6;
+  --accent2:  #10b981;
+  --danger:   #ef4444;
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --radius:   10px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ═══════════════════════════════════
+   UPLOAD SCREEN
+═══════════════════════════════════ */
+#upload-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 48px 24px;
+  gap: 28px;
+}
+
+.brand {
+  text-align: center;
+  margin-bottom: 4px;
+}
+.brand-sub {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.brand-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.brand-title span { color: var(--accent); }
+
+.upload-card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--card);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 52px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+.upload-card:hover, .upload-card.over {
+  border-color: var(--accent);
+  background: rgba(59,130,246,0.05);
+}
+.upload-card input {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.upload-icon { font-size: 36px; margin-bottom: 14px; }
+.upload-card h3 { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+.upload-card p { font-size: 12px; color: var(--muted); }
+
+.file-list {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 13px;
+}
+.file-row .fname {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-row .fsize { font-size: 11px; color: var(--muted); }
+.file-row .fdel {
+  cursor: pointer; color: var(--muted); font-size: 14px;
+  padding: 2px 5px; border-radius: 4px;
+  transition: color 0.15s;
+}
+.file-row .fdel:hover { color: var(--danger); }
+
+.pt-grid {
+  width: 100%;
+  max-width: 560px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.pt-grid input, .pt-grid textarea {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.pt-grid input:focus, .pt-grid textarea:focus { border-color: var(--accent); }
+.pt-grid input::placeholder, .pt-grid textarea::placeholder { color: var(--muted); }
+.pt-grid .full { grid-column: 1 / -1; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 28px;
+  border-radius: 8px; border: none; cursor: pointer;
+  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+  transition: all 0.15s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #2563eb; }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-ghost {
+  background: var(--card); color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ═══════════════════════════════════
+   LOADING SCREEN
+═══════════════════════════════════ */
+#loading-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 20px;
+  padding: 40px;
+}
+.spin {
+  width: 44px; height: 44px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#load-msg {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; color: var(--muted); text-align: center;
+}
+.progress-track {
+  width: 280px; height: 3px;
+  background: var(--border); border-radius: 2px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; width: 0%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+/* ═══════════════════════════════════
+   TOOLBAR (chart view)
+═══════════════════════════════════ */
+#toolbar {
+  display: none;
+  position: sticky; top: 0; z-index: 200;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px;
+  align-items: center; gap: 10px;
+}
+#toolbar .t-title {
+  flex: 1; font-size: 12px; font-weight: 500;
+  font-family: 'JetBrains Mono', monospace; color: var(--muted);
+}
+
+/* ═══════════════════════════════════
+   A4 PAGE WRAPPER
+═══════════════════════════════════ */
+#pages-wrap {
+  display: none;
+  background: var(--bg);
+  padding: 32px 20px 60px;
+}
+
+/* The A4 page — exactly 210mm × 297mm at 96dpi = 794px × 1123px */
+.a4-page {
+  width: 794px;
+  min-height: 1123px;
+  background: #fff;
+  color: #000;
+  margin: 0 auto 24px;
+  padding: 18mm 14mm 14mm;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 8pt;
+  box-shadow: 0 4px 40px rgba(0,0,0,0.5);
+  position: relative;
+  page-break-after: always;
+}
+
+/* ── within the A4 page ── */
+.pg-header {
+  text-align: center;
+  border-bottom: 2px solid #000;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+.pg-header .h-inst { font-size: 10.5pt; font-weight: bold; }
+.pg-header .h-dept { font-size: 8pt; color: #444; margin-top: 1px; }
+.pg-header .h-title { font-size: 9.5pt; font-weight: bold; margin-top: 5px; letter-spacing: 0.03em; }
+
+.pt-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 20px;
+  font-size: 7.5pt;
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #bbb;
+}
+.pt-info .lbl { color: #555; }
+.pt-info .val { font-weight: bold; }
+
+.sec { margin-bottom: 10px; }
+.sec-title {
+  font-size: 7pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1a3a8f;
+  background: #dce5f5;
+  padding: 2px 5px;
+  border: 1px solid #b0bdd6;
+  border-bottom: none;
+}
+
+table.inv {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 7pt;
+  table-layout: fixed;
+}
+table.inv th, table.inv td {
+  border: 1px solid #bbb;
+  padding: 2.5px 4px;
+  vertical-align: top;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+table.inv th {
+  background: #dce5f5;
+  font-weight: bold;
+  font-size: 6.5pt;
+  text-align: center;
+  white-space: nowrap;
+}
+table.inv td.p {
+  background: #f0f3fb;
+  font-weight: bold;
+  font-size: 6.5pt;
+  white-space: nowrap;
+}
+table.inv td.c { text-align: center; }
+table.inv td.ab { text-align: center; color: #b00; font-weight: bold; }
+table.inv td.lo { text-align: center; color: #b00; font-weight: bold; }
+table.inv td.hi { text-align: center; color: #a04000; font-weight: bold; }
+table.inv td.ok { text-align: center; color: #000; }
+
+.pg-footer {
+  position: absolute; bottom: 8mm; left: 14mm; right: 14mm;
+  display: flex; justify-content: space-between;
+  font-size: 6pt; color: #888;
+  border-top: 1px solid #ddd; padding-top: 3px;
+}
+.legend-line {
+  display: flex; gap: 14px; font-size: 6pt; color: #666;
+  margin-top: 6px; flex-wrap: wrap;
+}
+.leg { display: flex; align-items: center; gap: 3px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.dot-ab { background: #b00; }
+.dot-hi { background: #a04000; }
+
+/* ═══════════════════════════════════
+   PRINT
+═══════════════════════════════════ */
+@media print {
+  body { background: #fff !important; }
+  #upload-screen, #loading-screen, #toolbar { display: none !important; }
+  #pages-wrap {
+    display: block !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+  .a4-page {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    padding: 14mm 12mm 12mm !important;
+    box-shadow: none !important;
+    page-break-after: always;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════
+     UPLOAD SCREEN
+═══════════════════════════════════ -->
+<div id="upload-screen">
+  <div class="brand">
+    <div class="brand-sub">AIIMS Jodhpur · Dept. Anaesthesiology &amp; Critical Care</div>
+    <div class="brand-title">ICU <span>Investigations</span> Chart</div>
+  </div>
+
+  <div class="upload-card" id="drop-zone">
+    <input type="file" id="file-input" accept="application/pdf" multiple>
+    <div class="upload-icon">📋</div>
+    <h3>Drop patient report PDFs here</h3>
+    <p>or click to browse &nbsp;·&nbsp; multiple files supported</p>
+  </div>
+
+  <div class="file-list" id="file-list"></div>
+
+  <div class="pt-grid">
+    <input id="pt-name"      placeholder="Patient Name" />
+    <input id="pt-agesex"    placeholder="Age / Sex  (e.g. 58Y / F)" />
+    <input id="pt-doa"       placeholder="Date of Admission" />
+    <input id="pt-regno"     placeholder="CR / Reg. No." />
+    <input id="pt-bed"       placeholder="Ward / Bed  (e.g. AICU / 23)" />
+    <input id="pt-dept"      placeholder="Referring Dept." />
+    <input id="pt-diagnosis" placeholder="Diagnosis / Working Diagnosis" class="full" />
+  </div>
+
+  <button class="btn btn-primary" id="gen-btn" onclick="generate()" disabled>
+    ⚡&nbsp; Generate Chart
+  </button>
+</div>
+
+<!-- ═══════════════════════════════════
+     LOADING SCREEN
+═══════════════════════════════════ -->
+<div id="loading-screen">
+  <div class="spin"></div>
+  <div id="load-msg">Initialising…</div>
+  <div class="progress-track"><div class="progress-fill" id="prog"></div></div>
+</div>
+
+<!-- ═══════════════════════════════════
+     TOOLBAR
+═══════════════════════════════════ -->
+<div id="toolbar">
+  <span class="t-title" id="t-title">ICU Investigations Chart</span>
+  <button class="btn btn-ghost" onclick="window.print()">🖨 Print / Save PDF</button>
+  <button class="btn btn-ghost" onclick="dlHTML()">⬇ Download HTML</button>
+  <button class="btn btn-ghost" onclick="resetAll()">↩ New Chart</button>
+</div>
+
+<!-- ═══════════════════════════════════
+     A4 PAGES  (injected by JS)
+═══════════════════════════════════ -->
+<div id="pages-wrap"></div>
+
+<script>
+/* ────────────────────────────────────
+   FILE MANAGEMENT
+──────────────────────────────────── */
+let files = [];
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const fileListEl= document.getElementById('file-list');
+const genBtn    = document.getElementById('gen-btn');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('over');
+  addFiles([...e.dataTransfer.files].filter(f => f.type==='application/pdf'));
+});
+fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fileInput.value=''; });
+
+function addFiles(arr) {
+  arr.forEach(f => { if (!files.find(x=>x.name===f.name)) files.push(f); });
+  renderList();
+}
+function removeFile(n) { files=files.filter(f=>f.name!==n); renderList(); }
+function renderList() {
+  fileListEl.innerHTML = files.map(f=>`
+    <div class="file-row">
+      <span style="font-size:16px">📄</span>
+      <span class="fname">${f.name}</span>
+      <span class="fsize">${(f.size/1024).toFixed(0)} KB</span>
+      <span class="fdel" onclick="removeFile('${f.name}')">✕</span>
+    </div>`).join('');
+  genBtn.disabled = files.length===0;
+}
+
+/* ────────────────────────────────────
+   HELPERS
+──────────────────────────────────── */
+function toB64(file) {
+  return new Promise((res,rej) => {
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+function setMsg(m){ document.getElementById('load-msg').textContent=m; }
+function setProg(p){ document.getElementById('prog').style.width=p+'%'; }
+
+/* ────────────────────────────────────
+   CLAUDE API
+──────────────────────────────────── */
+async function callClaude(messages, system) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      system,
+      messages
+    })
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+}
+
+/* ────────────────────────────────────
+   REFERENCE RANGES
+──────────────────────────────────── */
+const REF = {
+  hb:   [11,15],   hct:  [33,45],   tlc: [4,11],    plt:  [150,450],
+  pt:   [11,13.5], inr:  [0.8,1.2], pct: [0,0.5],   hsCRP:[0,5],
+  urea: [17,43],   cr:   [0.51,0.95],
+  tbil: [0.3,1.2], dbil: [0,0.2],
+  tp:   [6.6,8.3], alb:  [3.5,5.3],
+  ast:  [0,35],    alt:  [0,35],    alp: [30,120],
+  na:   [136,146], k:    [3.5,5.1], cl:  [101,109],
+  mg:   [1.9,2.5]
+};
+
+function cls(val, key) {
+  if (!val || val===''|| val==='—') return 'c';
+  const n = parseFloat(String(val).replace(/[^0-9.\-]/g,''));
+  if (isNaN(n) || !REF[key]) return 'c';
+  const [lo,hi] = REF[key];
+  if (n < lo || n > hi) {
+    // slightly outside vs very outside
+    const pct = n < lo ? (lo-n)/lo : (n-hi)/hi;
+    return pct > 0.15 ? 'ab' : 'hi';
+  }
+  return 'ok';
+}
+
+function cell(val, key='') {
+  const c = cls(val, key);
+  const v = val==='' || val===null || val===undefined ? '—' : val;
+  return `<td class="${c}">${v}</td>`;
+}
+function pcell(label, w=130) {
+  return `<td class="p" style="width:${w}px">${label}</td>`;
+}
+function emptyN(n) { return '<td></td>'.repeat(n); }
+
+/* ────────────────────────────────────
+   BUILD A4 HTML FROM EXTRACTED DATA
+──────────────────────────────────── */
+function buildPages(d, pt) {
+  const dates  = (d.dates || []).slice(0, 9);   // max 9 time points
+  const N      = dates.length;
+  const EMPTY  = N > 0 ? emptyN(9-N) : emptyN(9);
+
+  const dateRow = dates.map(dt=>`<th>${dt}</th>`).join('') + EMPTY;
+
+  // helper: get value by date key
+  function v(obj, dt) { return obj?.[dt] ?? ''; }
+  function row(label, obj, refKey, paramW=130) {
+    const cells = dates.map(dt => cell(v(obj,dt), refKey)).join('');
+    return `<tr>${pcell(label,paramW)}${cells}${emptyN(9-N)}</tr>`;
+  }
+  function mrow(label, obj, paramW=100) {
+    const cells = dates.map(dt => `<td class="c" style="font-size:6pt;vertical-align:top">${v(obj,dt)||'—'}</td>`).join('');
+    return `<tr>${pcell(label,paramW)}${cells}${emptyN(9-N)}</tr>`;
+  }
+
+  const hemo = d.hematology  || {};
+  const bio  = d.biochemistry|| {};
+  const mic  = d.microbiology|| {};
+  const rad  = d.radiology   || {};
+  const oth  = d.other       || {};
+
+  const ptInfoHTML = `
+    <div class="pt-info">
+      <div><span class="lbl">Name: </span><span class="val">${pt.name||'—'}</span></div>
+      <div><span class="lbl">Age/Sex: </span><span class="val">${pt.ageSex||'—'}</span></div>
+      <div><span class="lbl">CR No: </span><span class="val">${pt.regNo||'—'}</span></div>
+      <div><span class="lbl">Ward/Bed: </span><span class="val">${pt.bed||'—'}</span></div>
+      <div><span class="lbl">DOA: </span><span class="val">${pt.doa||'—'}</span></div>
+      <div><span class="lbl">Dept: </span><span class="val">${pt.dept||'—'}</span></div>
+      <div style="flex-basis:100%"><span class="lbl">Diagnosis: </span><span class="val">${pt.diagnosis||'—'}</span></div>
+    </div>`;
+
+  const headerHTML = `
+    <div class="pg-header">
+      <div class="h-inst">All India Institute of Medical Sciences, Jodhpur</div>
+      <div class="h-dept">Department of Anaesthesiology &amp; Critical Care</div>
+      <div class="h-title">Investigations Chart for ICU Patients</div>
+    </div>`;
+
+  const legendHTML = `
+    <div class="legend-line">
+      <span class="leg"><span class="dot dot-ab"></span> Significantly abnormal</span>
+      <span class="leg"><span class="dot dot-hi"></span> Mildly abnormal / borderline</span>
+      <span class="leg" style="color:#000">Normal range</span>
+      <span class="leg">— = not done / not available</span>
+    </div>`;
+
+  const footerHTML = (pg, total) => `
+    <div class="pg-footer">
+      <span>CR No: ${pt.regNo||'—'} · ${pt.name||'—'}</span>
+      <span>Page ${pg} of ${total} · Generated ${new Date().toLocaleDateString('en-IN')}</span>
+    </div>`;
+
+  /* ── PAGE 1: Hematology + Biochemistry ── */
+  const page1 = `
+<div class="a4-page">
+  ${headerHTML}
+  ${ptInfoHTML}
+
+  <div class="sec">
+    <div class="sec-title">Hematological</div>
+    <table class="inv">
+      <thead><tr><th style="width:130px">Parameter</th>${dateRow}</tr></thead>
+      <tbody>
+        ${row('Hb (g/dL) [11–15]',         hemo.hb,    'hb')}
+        ${row('Hct (%) [33–45]',            hemo.hct,   'hct')}
+        ${row('TLC (×10³/µL) [4–11]',       hemo.tlc,   'tlc')}
+        ${row('N / L / M / E (%)',          hemo.dlc,   '')}
+        ${row('ANC (×10³) [1.5–7]',         hemo.anc,   'tlc')}
+        ${row('ALC (×10³) [1–3.7]',         hemo.alc,   '')}
+        ${row('Platelet (×10³) [150–450]',  hemo.plt,   'plt')}
+        ${row('PT (sec)',                   hemo.pt,    'pt')}
+        ${row('INR',                        hemo.inr,   'inr')}
+        ${row('aPTT',                       hemo.aptt,  '')}
+        ${row('HsCRP (mg/L) [<5]',          hemo.hsCRP, 'hsCRP')}
+        ${row('Procalcitonin (ng/mL)',       hemo.pct,   'pct')}
+        ${row('Ferritin',                   hemo.ferritin,'')}
+        ${row('D-Dimer',                    hemo.ddimer,'')}
+        ${row('ESR',                        hemo.esr,   '')}
+        ${row('RDW-CV (%) [11–16]',         hemo.rdw,   '')}
+        ${row('Immature Gran. (%)',         hemo.ig,    '')}
+        ${row('NRBC / 100 WBC',            hemo.nrbc,  '')}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Biochemistry</div>
+    <table class="inv">
+      <thead><tr><th style="width:130px">Parameter</th>${dateRow}</tr></thead>
+      <tbody>
+        ${row('B.Urea (mg/dL) [17–43]',     bio.urea,  'urea')}
+        ${row('S.Creatinine [0.51–0.95]',   bio.cr,    'cr')}
+        ${row('Total Bili [0.3–1.2]',       bio.tbil,  'tbil')}
+        ${row('Conj. Bili [0–0.2]',         bio.dbil,  'dbil')}
+        ${row('Total Protein [6.6–8.3]',    bio.tp,    'tp')}
+        ${row('S.Albumin [3.5–5.3]',        bio.alb,   'alb')}
+        ${row('S.Globulin [2–3.5]',         bio.glob,  '')}
+        ${row('AST (U/L) [0–35]',           bio.ast,   'ast')}
+        ${row('ALT (U/L) [0–35]',           bio.alt,   'alt')}
+        ${row('ALP (U/L) [30–120]',         bio.alp,   'alp')}
+        ${row('LDH',                        bio.ldh,   '')}
+        ${row('Na (mEq/L) [136–146]',       bio.na,    'na')}
+        ${row('K (mEq/L) [3.5–5.1]',        bio.k,     'k')}
+        ${row('Cl (mEq/L) [101–109]',       bio.cl,    'cl')}
+        ${row('Mg (mg/dL) [1.9–2.5]',       bio.mg,    'mg')}
+        ${row('Plasma Osmolality [275–300]', bio.osm,  '')}
+        ${row('S.Amylase',                  bio.amylase,'')}
+        ${row('S.Lipase',                   bio.lipase, '')}
+      </tbody>
+    </table>
+  </div>
+
+  ${legendHTML}
+  ${footerHTML(1, 2)}
+</div>`;
+
+  /* ── PAGE 2: Microbiology + Radiology + Other ── */
+  const micDates = (d.micDates || dates).slice(0,6);
+  const MN = micDates.length;
+
+  const micDateRow = micDates.map(dt=>`<th>${dt}</th>`).join('') + emptyN(6-MN);
+  function mrow2(label, obj, w=100) {
+    const cells = micDates.map(dt=>`<td class="c" style="font-size:6pt;vertical-align:top">${obj?.[dt]||'—'}</td>`).join('');
+    return `<tr>${pcell(label,w)}${cells}${emptyN(6-MN)}</tr>`;
+  }
+
+  const page2 = `
+<div class="a4-page">
+  ${headerHTML}
+  <div style="font-size:7pt;font-weight:bold;color:#444;margin-bottom:6px">
+    ${pt.name||'—'} · ${pt.ageSex||'—'} · CR: ${pt.regNo||'—'} · ${pt.bed||'—'}
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Microbiology</div>
+    <table class="inv">
+      <thead><tr><th style="width:100px">Parameter</th>${micDateRow}</tr></thead>
+      <tbody>
+        ${mrow2('Sample Type',   mic.sample,   100)}
+        ${mrow2('Coll. Date',    mic.collDate, 100)}
+        ${mrow2('Report Date',   mic.repDate,  100)}
+        ${mrow2('Organism',      mic.organism, 100)}
+        ${mrow2('Sensitive',     mic.sensitive,100)}
+        ${mrow2('Resistant',     mic.resistant,100)}
+        ${mrow2('Remarks',       mic.remarks,  100)}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Radiology</div>
+    <table class="inv">
+      <thead><tr><th style="width:100px">Parameter</th>${dateRow}</tr></thead>
+      <tbody>
+        ${mrow('Study / Date',    rad.study,  100)}
+        ${mrow('Lines & Tubes',   rad.tubes,  100)}
+        ${mrow('Impression',      rad.report, 100)}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Urine Electrolytes / Other</div>
+    <table class="inv">
+      <thead><tr><th style="width:130px">Parameter</th>${dateRow}</tr></thead>
+      <tbody>
+        ${row('Urine Na (mEq/L)',  oth.urineNa, '')}
+        ${row('Urine K (mEq/L)',   oth.urineK,  '')}
+        ${row('Urine Cl (mEq/L)',  oth.urineCl, '')}
+        ${mrow('PBF / Smear',      oth.pbf,     130)}
+        ${mrow('KOH / Fungal',     oth.fungal,  130)}
+        ${mrow('Other',            oth.misc,    130)}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">CSF</div>
+    <table class="inv">
+      <thead><tr><th style="width:130px">Parameter</th>${dateRow}</tr></thead>
+      <tbody>
+        ${row('Total Cell Count', oth.csfCells,'')}
+        ${row('Neutrophils (%)',  oth.csfNeutro,'')}
+        ${row('Lymphocytes (%)',  oth.csfLymph,'')}
+        ${row('Protein (mg/dL)', oth.csfProt,  '')}
+        ${row('Sugar (mg/dL)',   oth.csfSugar, '')}
+        ${row('Blood Sugar',     oth.csfBSugar,'')}
+      </tbody>
+    </table>
+  </div>
+
+  ${legendHTML}
+  ${footerHTML(2, 2)}
+</div>`;
+
+  return page1 + page2;
+}
+
+/* ────────────────────────────────────
+   GENERATE
+──────────────────────────────────── */
+async function generate() {
+  if (!files.length) return;
+
+  document.getElementById('upload-screen').style.display = 'none';
+  const ls = document.getElementById('loading-screen');
+  ls.style.display = 'flex';
+
+  try {
+    setMsg('Reading PDFs…'); setProg(5);
+
+    const pdfDocs = await Promise.all(files.map(async f => ({
+      name: f.name,
+      b64:  await toB64(f)
+    })));
+
+    setMsg('Sending to Claude…'); setProg(20);
+
+    // Build content array
+    const content = [];
+    pdfDocs.forEach(p => {
+      content.push({ type: 'text', text: `File: ${p.name}` });
+      content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: p.b64 }});
+    });
+
+    content.push({ type: 'text', text: `
+Extract ALL investigation results from these medical report PDFs.
+Return ONLY a valid JSON object — no markdown, no backticks, no commentary outside the JSON.
+
+Structure:
+{
+  "patientName": "...",
+  "dates": ["21-Apr","23-Apr","24-Apr","25-Apr","26-Apr"],
+  "micDates": ["19-Apr-Blood#1","19-Apr-Pus","22-Apr-Stool","24-Apr-Urine"],
+
+  "hematology": {
+    "hb":       {"21-Apr":"9.1", "23-Apr":"8.9"},
+    "hct":      {"21-Apr":"28.8"},
+    "tlc":      {"21-Apr":"11.94"},
+    "dlc":      {"21-Apr":"N:82 L:9 M:6 E:1"},
+    "anc":      {"21-Apr":"9.74"},
+    "alc":      {"21-Apr":"1.09"},
+    "plt":      {"21-Apr":"127"},
+    "pt":       {"24-Apr":"14.2"},
+    "inr":      {"24-Apr":"1.15"},
+    "aptt":     {},
+    "hsCRP":    {"23-Apr":"172.19"},
+    "pct":      {"21-Apr":"0.73","24-Apr":"0.18"},
+    "ferritin": {},
+    "ddimer":   {},
+    "esr":      {},
+    "rdw":      {"21-Apr":"18.2"},
+    "ig":       {"21-Apr":"0.8%"},
+    "nrbc":     {"21-Apr":"1.2"}
+  },
+
+  "biochemistry": {
+    "urea":    {"21-Apr":"34.2"},
+    "cr":      {"21-Apr":"0.42"},
+    "tbil":    {"21-Apr":"0.84"},
+    "dbil":    {"21-Apr":"0.24"},
+    "tp":      {"21-Apr":"5.26"},
+    "alb":     {"21-Apr":"2.15"},
+    "glob":    {"21-Apr":"3.11"},
+    "ast":     {"21-Apr":"35.9"},
+    "alt":     {"21-Apr":"24.8"},
+    "alp":     {"21-Apr":"120"},
+    "ldh":     {},
+    "na":      {"21-Apr":"132"},
+    "k":       {"21-Apr":"3.67"},
+    "cl":      {"21-Apr":"97"},
+    "mg":      {"23-Apr":"1.52"},
+    "osm":     {"23-Apr":"286"},
+    "amylase": {},
+    "lipase":  {}
+  },
+
+  "microbiology": {
+    "sample":    {"19-Apr-Blood#1":"Blood","19-Apr-Pus":"Pus/Abscess"},
+    "collDate":  {"19-Apr-Blood#1":"15-Apr-26"},
+    "repDate":   {"19-Apr-Blood#1":"21-Apr-26"},
+    "organism":  {"19-Apr-Blood#1":"No growth","19-Apr-Pus":"E. coli"},
+    "sensitive": {"19-Apr-Pus":"Imipenem(S), Meropenem(S), Cefop-Sulbactam(S), Tigecycline(S)"},
+    "resistant": {"19-Apr-Pus":"Ceftriaxone(R), Cipro(R), Gent(R), Amikacin(R), Aztreonam(R)"},
+    "remarks":   {}
+  },
+
+  "radiology": {
+    "study":  {"21-Apr":"CXR AP"},
+    "tubes":  {"21-Apr":"Bilateral pigtail catheters, ETT"},
+    "report": {"21-Apr":"Radiology report pending; bilateral lower zone changes on image"}
+  },
+
+  "other": {
+    "urineNa":  {"23-Apr":"25.2"},
+    "urineK":   {"23-Apr":"48.3"},
+    "urineCl":  {"23-Apr":"86"},
+    "pbf":      {"24-Apr":"Normocytic normochromic; plt reduced; manual 40-50k/uL"},
+    "fungal":   {"19-Apr":"KOH pus: No fungal elements; culture pending 6-8 wks"},
+    "misc":     {},
+    "csfCells": {},
+    "csfNeutro":{},
+    "csfLymph": {},
+    "csfProt":  {},
+    "csfSugar": {},
+    "csfBSugar":{}
+  }
+}
+
+Rules:
+- dates[] = all unique dates from any lab report, SHORT format "21-Apr", sorted ascending
+- micDates[] = descriptive labels for each microbiology specimen (e.g. "Blood#1-15Apr", "Pus-19Apr")
+- For microbiology sub-objects, keys = the micDates labels
+- Leave value as "" if not found for that date
+- Extract from ALL files
+- Return ONLY the JSON object, starting with { and ending with }
+` });
+
+    setMsg('Claude is reading all reports…'); setProg(40);
+
+    const system = `You are a precise medical data extraction engine. Extract lab values from PDF reports into structured JSON only. Return nothing except valid JSON starting with { and ending with }.`;
+
+    const raw = await callClaude([{ role:'user', content }], system);
+
+    setMsg('Parsing data…'); setProg(80);
+
+    let data;
+    try {
+      const clean = raw.trim().replace(/^```json|^```|```$/gm,'').trim();
+      // find first { to last }
+      const start = clean.indexOf('{');
+      const end   = clean.lastIndexOf('}');
+      data = JSON.parse(clean.slice(start, end+1));
+    } catch(e) {
+      throw new Error('Could not parse Claude response. Try again. ('+e.message+')');
+    }
+
+    // Fill patient info — use uploaded fields or fall back to extracted
+    const pt = {
+      name:      document.getElementById('pt-name').value      || data.patientName || '—',
+      ageSex:    document.getElementById('pt-agesex').value    || '',
+      doa:       document.getElementById('pt-doa').value       || '',
+      regNo:     document.getElementById('pt-regno').value     || '',
+      bed:       document.getElementById('pt-bed').value       || '',
+      dept:      document.getElementById('pt-dept').value      || '',
+      diagnosis: document.getElementById('pt-diagnosis').value || '',
+    };
+
+    setMsg('Rendering chart…'); setProg(93);
+
+    const pagesHTML = buildPages(data, pt);
+    document.getElementById('pages-wrap').innerHTML = pagesHTML;
+
+    // show toolbar + pages
+    ls.style.display = 'none';
+    document.getElementById('toolbar').style.display = 'flex';
+    document.getElementById('pages-wrap').style.display = 'block';
+    document.getElementById('t-title').textContent =
+      `ICU Chart · ${pt.name} · ${pt.bed}`;
+
+    setProg(100);
+  } catch(err) {
+    ls.style.display = 'none';
+    document.getElementById('upload-screen').style.display = 'flex';
+    alert('Error: ' + err.message);
+  }
+}
+
+/* ────────────────────────────────────
+   DOWNLOAD HTML
+──────────────────────────────────── */
+function dlHTML() {
+  const pages = document.getElementById('pages-wrap').innerHTML;
+  const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>ICU Investigations Chart</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f0f0f0;padding:20px}
+.a4-page{width:794px;min-height:1123px;background:#fff;color:#000;margin:0 auto 20px;
+  padding:18mm 14mm 14mm;font-family:Arial,sans-serif;font-size:8pt;
+  box-shadow:0 2px 20px rgba(0,0,0,.2);page-break-after:always}
+.pg-header{text-align:center;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px}
+.h-inst{font-size:10.5pt;font-weight:bold}
+.h-dept{font-size:8pt;color:#444;margin-top:1px}
+.h-title{font-size:9.5pt;font-weight:bold;margin-top:5px;letter-spacing:.03em}
+.pt-info{display:flex;flex-wrap:wrap;gap:3px 20px;font-size:7.5pt;margin-bottom:8px;
+  padding-bottom:5px;border-bottom:1px solid #bbb}
+.pt-info .lbl{color:#555}.pt-info .val{font-weight:bold}
+.sec{margin-bottom:10px}
+.sec-title{font-size:7pt;font-weight:bold;text-transform:uppercase;letter-spacing:.08em;
+  color:#1a3a8f;background:#dce5f5;padding:2px 5px;border:1px solid #b0bdd6;border-bottom:none}
+table.inv{width:100%;border-collapse:collapse;font-size:7pt;table-layout:fixed}
+table.inv th,table.inv td{border:1px solid #bbb;padding:2.5px 4px;vertical-align:top;word-wrap:break-word}
+table.inv th{background:#dce5f5;font-weight:bold;font-size:6.5pt;text-align:center;white-space:nowrap}
+table.inv td.p{background:#f0f3fb;font-weight:bold;font-size:6.5pt;white-space:nowrap}
+table.inv td.c{text-align:center}
+table.inv td.ab,table.inv td.lo{text-align:center;color:#b00;font-weight:bold}
+table.inv td.hi{text-align:center;color:#a04000;font-weight:bold}
+table.inv td.ok{text-align:center;color:#000}
+.pg-footer{position:absolute;bottom:8mm;left:14mm;right:14mm;display:flex;
+  justify-content:space-between;font-size:6pt;color:#888;
+  border-top:1px solid #ddd;padding-top:3px}
+.legend-line{display:flex;gap:14px;font-size:6pt;color:#666;margin-top:6px;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:3px}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.dot-ab{background:#b00}.dot-hi{background:#a04000}
+@media print{body{background:#fff;padding:0}
+  .a4-page{box-shadow:none;margin:0;width:210mm;min-height:297mm;padding:14mm 12mm 12mm}
+  @page{size:A4 portrait;margin:0}}
+</style></head><body>${pages}</body></html>`], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'icu_investigations_chart.html';
+  a.click();
+}
+
+function resetAll() {
+  files = [];
+  renderList();
+  document.getElementById('pages-wrap').innerHTML = '';
+  document.getElementById('pages-wrap').style.display = 'none';
+  document.getElementById('toolbar').style.display = 'none';
+  document.getElementById('upload-screen').style.display = 'flex';
+  ['pt-name','pt-agesex','pt-doa','pt-regno','pt-bed','pt-dept','pt-diagnosis']
+    .forEach(id => document.getElementById(id).value = '');
+}
+</script>
+</body>
+</html>
