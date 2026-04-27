@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCM Reference Form — AIIMS Jodhpur</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f0e8;
+    --paper: #fefcf7;
+    --ink: #1a1208;
+    --ink-light: #4a3f2a;
+    --rule: #c8b99a;
+    --accent: #8b1a1a;
+    --accent-soft: #f0e8e8;
+    --stamp: #2a4a2a;
+    --mono: 'JetBrains Mono', monospace;
+    --serif: 'EB Garamond', Georgia, serif;
+  }
+
+  body {
+    background: var(--bg);
+    font-family: var(--serif);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+    background-image: 
+      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(200,185,154,0.15) 27px, rgba(200,185,154,0.15) 28px);
+  }
+
+  .page-wrap {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  /* HEADER */
+  .letterhead {
+    text-align: center;
+    border-bottom: 3px double var(--rule);
+    padding-bottom: 1.2rem;
+    margin-bottom: 2rem;
+    position: relative;
+  }
+  .letterhead::before {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: var(--accent);
+    margin: 0 auto 0.8rem;
+  }
+  .dept-title {
+    font-size: 1.55rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    line-height: 1.25;
+    text-transform: uppercase;
+  }
+  .sub-title {
+    font-size: 1.05rem;
+    color: var(--ink-light);
+    font-style: italic;
+    margin-top: 0.25rem;
+  }
+  .inst {
+    font-size: 0.9rem;
+    color: var(--ink-light);
+    margin-top: 0.4rem;
+    font-family: var(--mono);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+  }
+
+  /* FORM */
+  .form-card {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 2.4rem 2.8rem;
+    box-shadow: 0 2px 24px rgba(26,18,8,0.08), inset 0 0 0 6px rgba(200,185,154,0.1);
+    position: relative;
+  }
+  .form-card::after {
+    content: 'AICU';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    font-size: 7rem;
+    font-weight: 600;
+    color: rgba(139,26,26,0.04);
+    letter-spacing: 0.3em;
+    pointer-events: none;
+    user-select: none;
+    font-family: var(--mono);
+  }
+
+  .form-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin-bottom: 1.4rem;
+    flex-wrap: wrap;
+  }
+  .form-row.block {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+
+  label {
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--ink);
+    min-width: fit-content;
+  }
+  label .req { color: var(--accent); }
+
+  input[type="text"], input[type="date"], select, textarea {
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--rule);
+    padding: 0.25rem 0.3rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus, input[type="date"]:focus, select:focus, textarea:focus {
+    border-bottom-color: var(--accent);
+  }
+  input[type="date"] { max-width: 180px; }
+
+  select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a3f2a'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    padding-right: 22px;
+  }
+
+  textarea {
+    resize: vertical;
+    border: 1.5px solid var(--rule);
+    border-radius: 1px;
+    padding: 0.5rem 0.6rem;
+    min-height: 90px;
+    line-height: 1.6;
+    margin-top: 0.2rem;
+  }
+  textarea:focus { border-color: var(--accent); }
+
+  /* COMPLAINTS SECTION */
+  .complaints-section {
+    margin: 1.6rem 0;
+    padding: 1.2rem 1.4rem;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 0 2px 2px 0;
+  }
+  .complaints-section h3 {
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+    font-family: var(--mono);
+  }
+  .complaint-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    margin-bottom: 0.9rem;
+  }
+  .complaint-num {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--accent);
+    min-width: 1.5rem;
+  }
+  .complaint-row input[type="text"] {
+    flex: 1;
+  }
+
+  /* VENTILATOR TOGGLE */
+  .radio-group {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    margin-top: 0.2rem;
+  }
+  .radio-option {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+  .radio-option input[type="radio"] {
+    accent-color: var(--accent);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+  }
+
+  /* DIVIDER */
+  .form-divider {
+    border: none;
+    border-top: 1px dashed var(--rule);
+    margin: 1.6rem 0;
+  }
+
+  /* SIGNATURE SECTION */
+  .signature-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 2.4rem;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  .sig-block {
+    text-align: center;
+  }
+  .sig-line {
+    width: 200px;
+    border-bottom: 1.5px solid var(--ink);
+    margin-bottom: 0.4rem;
+    height: 32px;
+  }
+  .sig-label {
+    font-size: 0.82rem;
+    font-family: var(--mono);
+    letter-spacing: 0.05em;
+    color: var(--ink-light);
+    text-transform: uppercase;
+  }
+  .sig-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--stamp);
+  }
+
+  /* BUTTONS */
+  .btn-bar {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2.4rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .btn {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.6rem 1.4rem;
+    border-radius: 1px;
+    cursor: pointer;
+    border: 1.5px solid currentColor;
+    transition: all 0.15s;
+  }
+  .btn-reset {
+    color: var(--ink-light);
+    background: transparent;
+  }
+  .btn-reset:hover { background: rgba(0,0,0,0.05); }
+  .btn-print {
+    color: var(--accent);
+    background: transparent;
+  }
+  .btn-print:hover { background: var(--accent-soft); }
+  .btn-generate {
+    color: var(--paper);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .btn-generate:hover { opacity: 0.88; }
+
+  /* PREVIEW */
+  #preview-section {
+    display: none;
+    margin-top: 2.4rem;
+    border-top: 2px solid var(--accent);
+    padding-top: 2rem;
+  }
+  #preview-section.visible { display: block; }
+  .preview-box {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 2.2rem 2.6rem;
+    font-family: 'Times New Roman', serif;
+    font-size: 13px;
+    line-height: 1.8;
+    color: #000;
+    position: relative;
+  }
+  .preview-header {
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #000;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+  }
+  .preview-field { display: inline; border-bottom: 1px solid #000; min-width: 60px; padding-bottom: 1px; }
+  .preview-section-label { font-weight: bold; }
+  .preview-complaints { margin: 8px 0 8px 10px; }
+  .preview-opinion-box {
+    border: 1px solid #999;
+    min-height: 70px;
+    margin-top: 4px;
+    padding: 6px;
+    font-size: 12px;
+    white-space: pre-wrap;
+  }
+  .preview-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+    font-size: 11px;
+  }
+  .preview-stamp {
+    text-align: right;
+    font-weight: bold;
+    font-size: 11px;
+  }
+
+  @media print {
+    @page { margin: 0.35in 0.45in; }
+    body { background: white; padding: 0; }
+    .form-card, .btn-bar, .page-wrap > .letterhead, #preview-section .preview-header + * { }
+    .btn-bar, .form-card, .letterhead { display: none !important; }
+    #preview-section { display: block !important; margin: 0; border: none; padding: 0; }
+    .preview-box { border: none; padding: 0.2in 0.3in; font-size: 12px; line-height: 1.6; }
+  }
+  @media (max-width: 540px) {
+    .form-card { padding: 1.4rem 1.2rem; }
+    .signature-area { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="letterhead">
+    <div class="dept-title">Department of Critical Care Medicine</div>
+    <div class="sub-title">Reference / Referral Form</div>
+    <div class="inst">AIIMS Jodhpur</div>
+  </div>
+
+  <div class="form-card">
+
+    <!-- DATE + BED -->
+    <div class="form-row" style="gap:2rem; flex-wrap:wrap;">
+      <div class="form-row" style="margin:0; align-items:baseline; gap:0.5rem;">
+        <label for="ref-date">Date: <span class="req">*</span></label>
+        <input type="date" id="ref-date">
+      </div>
+      <div class="form-row" style="margin:0; align-items:baseline; gap:0.5rem;">
+        <label for="bed-no">AICU Bed No.:</label>
+        <input type="text" id="bed-no" placeholder="e.g. 30" style="max-width:80px;">
+      </div>
+    </div>
+
+    <!-- TO DEPARTMENT -->
+    <div class="form-row" style="margin-top:1.2rem; align-items:baseline; gap:0.5rem; flex-wrap:wrap;">
+      <label>To, The Faculty/SR — Dept. of:</label>
+      <div style="flex:1; min-width:220px;">
+        <select id="dept-select" onchange="toggleCustomDept(this)">
+          <option value="">— Select Department —</option>
+          <option>Infectious Disease</option>
+          <option>Neurology</option>
+          <option>Neurosurgery</option>
+          <option>Cardiology</option>
+          <option>Nephrology</option>
+          <option>Pulmonology / Respiratory Medicine</option>
+          <option>Gastroenterology</option>
+          <option>Haematology</option>
+          <option>Endocrinology</option>
+          <option>General Surgery</option>
+          <option>Orthopaedics</option>
+          <option>Dermatology</option>
+          <option>Psychiatry</option>
+          <option>Ophthalmology</option>
+          <option>ENT</option>
+          <option>Microbiology</option>
+          <option>Other (specify)</option>
+        </select>
+      </div>
+    </div>
+    <div id="custom-dept-row" class="form-row" style="display:none; margin-top:0.4rem; gap:0.5rem;">
+      <label>Specify:</label>
+      <input type="text" id="custom-dept" placeholder="Department name">
+    </div>
+
+    <hr class="form-divider">
+
+    <!-- CHIEF COMPLAINTS -->
+    <div class="complaints-section">
+      <h3>Chief Complaints (on Admission to AICU)</h3>
+      <div class="complaint-row">
+        <span class="complaint-num">1.</span>
+        <input type="text" id="c1" placeholder="Primary complaint / diagnosis">
+      </div>
+      <div class="complaint-row">
+        <span class="complaint-num">2.</span>
+        <input type="text" id="c2" placeholder="Secondary complaint / diagnosis">
+      </div>
+      <div class="complaint-row" style="margin-bottom:0;">
+        <span class="complaint-num">3.</span>
+        <input type="text" id="c3" placeholder="Additional complaint / diagnosis (optional)">
+      </div>
+    </div>
+
+    <!-- RESPIRATORY SUPPORT -->
+    <div class="form-row block" style="margin-top:1.2rem;">
+      <label>At present, patient is on:</label>
+      <div class="radio-group">
+        <label class="radio-option"><input type="radio" name="resp" value="Ventilator"> Ventilator</label>
+        <label class="radio-option"><input type="radio" name="resp" value="Room Air"> Room Air</label>
+        <label class="radio-option"><input type="radio" name="resp" value="O₂ via mask/prongs"> O₂ via mask/prongs</label>
+        <label class="radio-option"><input type="radio" name="resp" value="HFNC"> HFNC</label>
+        <label class="radio-option"><input type="radio" name="resp" value="NIV"> NIV</label>
+        <label class="radio-option"><input type="radio" name="resp" id="resp-other-radio" value="Other"> Other:</label>
+        <input type="text" id="resp-other-text" placeholder="specify" style="max-width:120px; display:none;">
+      </div>
+    </div>
+
+    <hr class="form-divider">
+
+    <!-- EXPERT OPINION -->
+    <div class="form-row block" style="margin-top:0.4rem;">
+      <label>Expert Opinion Requested Regarding: <span class="req">*</span></label>
+      <textarea id="opinion" placeholder="e.g. Gene Xpert Ultra — Negative. Kindly give your valuable opinion regarding continuation of ATT.&#10;&#10;Or: Please evaluate and advise on management of VAP (CRAB+), further antimicrobial therapy, and de-escalation."></textarea>
+    </div>
+
+    <!-- SIGNATURE -->
+    <div class="signature-area">
+      <div class="sig-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Noted By</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-name">DR. SADIK MOHAMMED</div>
+        <div class="sig-label">AICU Incharge</div>
+      </div>
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="btn-bar">
+      <button class="btn btn-reset" onclick="resetForm()">↺ Reset</button>
+      <button class="btn btn-print" onclick="window.print()">⎙ Print Preview</button>
+      <button class="btn btn-generate" onclick="generateReferral()">Generate Referral →</button>
+    </div>
+
+  </div><!-- /form-card -->
+
+  <!-- GENERATED PREVIEW -->
+  <div id="preview-section">
+    <div id="preview-box" class="preview-box"></div>
+    <div class="btn-bar" style="margin-top:1rem;">
+      <button class="btn btn-print" onclick="window.print()">⎙ Print</button>
+    </div>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<script>
+  // Set today's date by default
+  const today = new Date();
+  const dd = String(today.getDate()).padStart(2,'0');
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const yy = String(today.getFullYear()).slice(-2);
+  document.getElementById('ref-date').value = today.toISOString().split('T')[0];
+
+  function toggleCustomDept(sel) {
+    const row = document.getElementById('custom-dept-row');
+    row.style.display = sel.value === 'Other (specify)' ? 'flex' : 'none';
+  }
+
+  // Show/hide "Other" text for resp support
+  document.querySelectorAll('input[name="resp"]').forEach(r => {
+    r.addEventListener('change', () => {
+      document.getElementById('resp-other-text').style.display =
+        document.getElementById('resp-other-radio').checked ? 'inline-block' : 'none';
+    });
+  });
+
+  function formatDate(val) {
+    if (!val) return '___/___/___';
+    const [y, m, d] = val.split('-');
+    return `${d}/${m}/${y.slice(-2)}`;
+  }
+
+  function getDept() {
+    const sel = document.getElementById('dept-select').value;
+    if (sel === 'Other (specify)') return document.getElementById('custom-dept').value || '_______________';
+    return sel || '_______________';
+  }
+
+  function getRespSupport() {
+    const checked = document.querySelector('input[name="resp"]:checked');
+    if (!checked) return '_______________';
+    if (checked.value === 'Other') {
+      const t = document.getElementById('resp-other-text').value;
+      return 'Other' + (t ? ': ' + t : '');
+    }
+    return checked.value;
+  }
+
+  function generateReferral() {
+    const date = formatDate(document.getElementById('ref-date').value);
+    const bed = document.getElementById('bed-no').value || '___';
+    const dept = getDept();
+    const c1 = document.getElementById('c1').value;
+    const c2 = document.getElementById('c2').value;
+    const c3 = document.getElementById('c3').value;
+    const resp = getRespSupport();
+    const opinion = document.getElementById('opinion').value;
+
+    const complaints = [c1, c2, c3].filter(Boolean);
+
+    let complaintsHtml = '';
+    complaints.forEach((c, i) => {
+      complaintsHtml += `<div style="margin-bottom:3px;"><b>${i+1}.</b>&nbsp;${c}</div>`;
+    });
+    if (!complaintsHtml) complaintsHtml = '<div>1. _______________</div>';
+
+    const opinionHtml = opinion
+      ? `<div style="white-space:pre-wrap; font-size:12px; line-height:1.7;">${opinion}</div>`
+      : `<div style="height:70px; border:1px solid #aaa; margin-top:4px;"></div>`;
+
+    document.getElementById('preview-box').innerHTML = `
+      <div style="text-align:center; border-bottom:3px double #c8b99a; padding-bottom:14px; margin-bottom:18px;">
+        <div style="width:60px; height:3px; background:#8b1a1a; margin:0 auto 10px;"></div>
+        <div style="font-family:'EB Garamond',Georgia,serif; font-size:1.45rem; font-weight:600; letter-spacing:0.04em; color:#8b1a1a; text-transform:uppercase; line-height:1.25;">Department of Critical Care Medicine</div>
+        <div style="font-family:'EB Garamond',Georgia,serif; font-size:1rem; color:#4a3f2a; font-style:italic; margin-top:4px;">Reference / Referral Form</div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:#4a3f2a; margin-top:4px; letter-spacing:0.08em; font-weight:500;">AIIMS JODHPUR</div>
+      </div>
+      <table style="width:100%; font-size:13px; margin-bottom:10px;">
+        <tr>
+          <td style="width:100%;"><b>DATE:</b> <span class="preview-field">${date}</span></td>
+        </tr>
+      </table>
+      <div style="margin-bottom:6px;"><b>TO,</b></div>
+      <div style="margin-bottom:2px;">The FACULTY/SR</div>
+      <div style="margin-bottom:2px;">Department of <span class="preview-field">${dept}</span></div>
+      <div style="margin-bottom:14px;">AIIMS Jodhpur</div>
+      <div style="margin-bottom:8px;">Respected Sir/Madam,</div>
+      <div style="margin-bottom:10px;">
+        This is to inform you that we have one patient in AICU bed no.&nbsp;<b>${bed}</b>
+        admitted in AICU with chief complaints of:
+      </div>
+      <div class="preview-complaints">${complaintsHtml}</div>
+      <div style="margin-bottom:10px;">
+        At present patient is on&nbsp;<b>${resp}</b>.
+      </div>
+      <div style="margin-bottom:6px;">
+        You are requested to please come and evaluate the patient and give your expert opinion regarding:
+      </div>
+      ${opinionHtml}
+      <div class="preview-footer">
+        <div><b>NOTED BY</b></div>
+        <div class="preview-stamp">DR. SADIK MOHAMMED<br>AICU INCHARGE</div>
+      </div>
+    `;
+
+    const sec = document.getElementById('preview-section');
+    sec.classList.add('visible');
+    sec.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function resetForm() {
+    document.getElementById('ref-date').value = today.toISOString().split('T')[0];
+    ['bed-no','c1','c2','c3','opinion','custom-dept','resp-other-text'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('dept-select').value = '';
+    document.getElementById('custom-dept-row').style.display = 'none';
+    document.getElementById('resp-other-text').style.display = 'none';
+    document.querySelectorAll('input[name="resp"]').forEach(r => r.checked = false);
+    document.getElementById('preview-section').classList.remove('visible');
+  }
+</script>
+</body>
+</html>
