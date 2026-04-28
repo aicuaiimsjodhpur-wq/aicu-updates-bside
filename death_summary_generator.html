@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AICU Death Summary Generator — AIIMS Jodhpur</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #161b27;
+    --surface2: #1e2535;
+    --border: #2a3347;
+    --border-active: #3d8af7;
+    --text: #e2e8f0;
+    --text-dim: #8892a4;
+    --text-muted: #4a5568;
+    --accent: #3d8af7;
+    --accent-glow: rgba(61,138,247,0.15);
+    --success: #34c975;
+    --success-glow: rgba(52,201,117,0.12);
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .logo-text {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 0.05em;
+  }
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+  }
+  .header-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+  .btn-download-html {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-download-html:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .btn-download-html svg {
+    width: 13px; height: 13px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+
+  /* ── LAYOUT ── */
+  .shell {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* ── SIDEBAR ── */
+  aside {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  .sidebar-section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+    display: block;
+    opacity: 0.6;
+  }
+  .upload-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .upload-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .upload-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin: 2px;
+    color: var(--text-dim);
+  }
+
+  .file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  .file-item-icon { font-size: 14px; }
+  .file-item-name { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-item-size { font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
+  .file-item-remove {
+    background: none; border: none; color: var(--text-muted); cursor: pointer;
+    font-size: 14px; padding: 0 2px; line-height: 1;
+    transition: color 0.15s;
+  }
+  .file-item-remove:hover { color: var(--danger); }
+
+  /* Parse button */
+  .btn-parse {
+    width: 100%;
+    padding: 11px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-parse:hover:not(:disabled) { background: #5599ff; box-shadow: 0 0 16px rgba(61,138,247,0.4); }
+  .btn-parse:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status-bar {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    border: 1px solid;
+    display: none;
+    line-height: 1.5;
+  }
+  .status-bar.info { background: rgba(61,138,247,0.08); border-color: rgba(61,138,247,0.3); color: #7ab3ff; display: block; }
+  .status-bar.success { background: var(--success-glow); border-color: rgba(52,201,117,0.3); color: var(--success); display: block; }
+  .status-bar.error { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); color: #f87171; display: block; }
+
+  /* ── MAIN FORM ── */
+  main {
+    padding: 28px 32px;
+    overflow-y: auto;
+    max-height: calc(100vh - 56px);
+  }
+
+  .form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .form-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .form-title span {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    margin-top: 3px;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-generate {
+    padding: 10px 22px;
+    background: var(--success);
+    color: #0a1a10;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-generate:hover:not(:disabled) { box-shadow: 0 0 20px rgba(52,201,117,0.4); }
+  .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Sections */
+  .form-section {
+    margin-bottom: 32px;
+  }
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .form-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .form-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .span-2 { grid-column: span 2; }
+  .span-3 { grid-column: span 3; }
+  .span-full { grid-column: 1 / -1; }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .field label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .field input, .field select, .field textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+  .field textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.6;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .field select option { background: var(--surface2); }
+
+  /* Investigation table */
+  .inv-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  table.inv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  table.inv-table th {
+    background: var(--surface2);
+    padding: 8px 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  table.inv-table th:first-child { text-align: left; width: 130px; }
+  table.inv-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid rgba(42,51,71,0.5);
+    vertical-align: middle;
+  }
+  table.inv-table tr:last-child td { border-bottom: none; }
+  table.inv-table td:first-child {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--surface2);
+    padding-left: 10px;
+    white-space: nowrap;
+  }
+  table.inv-table input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    padding: 4px 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  table.inv-table input:focus {
+    outline: none;
+    border-bottom-color: var(--accent);
+  }
+  .date-header-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--accent);
+    padding: 3px 6px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+    width: 80px;
+    text-align: center;
+  }
+  .date-header-input:focus { outline: none; }
+
+  .add-col-btn {
+    background: none;
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--mono);
+  }
+  .add-col-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Cause of death */
+  .cod-row {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .cod-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* Progress spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+    max-width: 340px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: rgba(52,201,117,0.4); color: var(--success); }
+  .toast.error { border-color: rgba(239,68,68,0.4); color: #f87171; }
+
+  /* Divider */
+  hr.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 8px 0;
+  }
+
+  .api-key-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 6px;
+  }
+  .api-key-row input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .api-key-row input:focus { outline: none; }
+  .api-key-row label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--warn);
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <div>
+      <div class="logo-text">AICU Death Summary Generator</div>
+      <div class="logo-sub">AIIMS JODHPUR · DEPT. ANAESTHESIOLOGY &amp; CRITICAL CARE</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="btn-download-html" id="downloadHtmlBtn" title="Download this app as a standalone HTML file">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download App
+    </button>
+    <div class="header-badge">v1.0 · DOCX OUTPUT</div>
+  </div>
+</header>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside>
+    <div>
+      <div class="sidebar-section-label">API Key</div>
+      <div class="api-key-row">
+        <label>🔑 ANTHROPIC KEY</label>
+        <input type="password" id="apiKey" placeholder="sk-ant-..." />
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-label">Upload Patient Files</div>
+      <div class="upload-zone" id="dropZone">
+        <input type="file" id="fileInput" multiple accept=".html,.pdf,.docx,.doc,.txt" />
+        <span class="upload-icon">📂</span>
+        <div class="upload-title">Drop files here or click to browse</div>
+        <div class="upload-sub">
+          <span class="upload-badge">HTML</span>
+          <span class="upload-badge">PDF</span>
+          <span class="upload-badge">DOCX</span>
+          <span class="upload-badge">TXT</span>
+        </div>
+      </div>
+      <div class="file-list" id="fileList"></div>
+    </div>
+
+    <div id="statusBar" class="status-bar"></div>
+
+    <button class="btn-parse" id="parseBtn" disabled>
+      <span class="btn-parse-inner">⚡ Extract &amp; Auto-Fill Form</span>
+    </button>
+
+    <hr class="divider">
+
+    <div style="font-size:11px; color:var(--text-muted); line-height:1.7;">
+      <strong style="color:var(--text-dim)">How it works:</strong><br>
+      1. Upload any patient record file<br>
+      2. Claude extracts all clinical data<br>
+      3. Review &amp; edit the form<br>
+      4. Click Generate → download .docx
+    </div>
+  </aside>
+
+  <!-- MAIN FORM -->
+  <main>
+    <div class="form-header">
+      <div class="form-title">
+        Death Summary
+        <span>AICU · AIIMS JODHPUR TEMPLATE</span>
+      </div>
+      <button class="btn-generate" id="generateBtn">
+        📄 Generate DOCX
+      </button>
+    </div>
+
+    <!-- PATIENT DETAILS -->
+    <div class="form-section">
+      <div class="section-title">Patient Details</div>
+      <div class="form-grid cols-4">
+        <div class="field"><label>CR No.</label><input id="cr_no" placeholder="989262601312237" /></div>
+        <div class="field"><label>Patient Name</label><input id="pt_name" placeholder="Harkha Ram" /></div>
+        <div class="field"><label>Age / Gender</label><input id="age_sex" placeholder="43 Yr / M" /></div>
+        <div class="field"><label>Bed No.</label><input id="bed_no" placeholder="29" /></div>
+        <div class="field"><label>Father's Name</label><input id="father_name" placeholder="Poonma Ram" /></div>
+        <div class="field"><label>District</label><input id="district" placeholder="Barmer" /></div>
+        <div class="field"><label>Ward / Room</label><input id="ward" placeholder="AICU" /></div>
+        <div class="field"><label>Patient Category</label><input id="category" placeholder="Maa Yojana" /></div>
+        <div class="field"><label>Adm. No.</label><input id="adm_no" placeholder="989262026029010" /></div>
+        <div class="field"><label>Admitted On</label><input id="adm_date" placeholder="19-Apr-2026 18:54" /></div>
+        <div class="field"><label>Date of Death</label><input id="dod" placeholder="25/04/2026" /></div>
+        <div class="field"><label>Time of Death</label><input id="tod" placeholder="10:49 AM" /></div>
+      </div>
+    </div>
+
+    <!-- DIAGNOSIS -->
+    <div class="form-section">
+      <div class="section-title">Diagnosis</div>
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="field"><label>Diagnosis 1</label><input id="dx1" placeholder="Malignant cerebral edema in case of Acute Subdural Haematoma (SDH)..." /></div>
+        <div class="field"><label>Diagnosis 2</label><input id="dx2" placeholder="H/o Road Traffic Accident (MLC) — 2-wheeler, unhelmeted..." /></div>
+        <div class="field"><label>Diagnosis 3</label><input id="dx3" placeholder="No active neurosurgical intervention (poor GCS, E1V1M1)..." /></div>
+      </div>
+    </div>
+
+    <!-- HOPI -->
+    <div class="form-section">
+      <div class="section-title">History of Present Illness (HOPI)</div>
+      <div class="field">
+        <textarea id="hopi" rows="5" placeholder="A 43-year-old male presented on 19/04/2026 following a road traffic accident..."></textarea>
+      </div>
+    </div>
+
+    <!-- AICU COURSE -->
+    <div class="form-section">
+      <div class="section-title">AICU Course</div>
+      <div class="field">
+        <textarea id="aicu_course" rows="6" placeholder="The patient was managed in AICU with mechanical ventilation..."></textarea>
+      </div>
+    </div>
+
+    <!-- INVESTIGATIONS -->
+    <div class="form-section">
+      <div class="section-title">Investigations</div>
+      <div class="inv-table-wrap">
+        <table class="inv-table" id="invTable">
+          <thead>
+            <tr id="dateRow">
+              <th>Parameter</th>
+              <!-- date headers injected by JS -->
+            </tr>
+          </thead>
+          <tbody id="invBody">
+            <!-- rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px">
+        <button class="add-col-btn" id="addColBtn">+ Add Date Column</button>
+      </div>
+    </div>
+
+    <!-- TREATMENT -->
+    <div class="form-section">
+      <div class="section-title">Treatment History</div>
+      <div class="form-grid cols-2">
+        <div class="field"><label>Vasopressors</label><input id="tx_vasopressors" placeholder="Inj. Vasopressin @ 1.2 mL/hr + Inj. Noradrenaline @ 10 mL/hr" /></div>
+        <div class="field"><label>Antimicrobials</label><input id="tx_antibiotics" placeholder="Inj. Ceftriaxone IV" /></div>
+        <div class="field"><label>Neuroprotective</label><input id="tx_neuro" placeholder="Inj. Mannitol, Inj. Glycerol, Inj. Levetiracetam" /></div>
+        <div class="field"><label>Hormonal</label><input id="tx_hormonal" placeholder="Tab. Thyroxine" /></div>
+        <div class="field"><label>Ulcer Prophylaxis</label><input id="tx_ulcer" placeholder="Inj. Pantoprazole 40 mg IV OD" /></div>
+        <div class="field"><label>DVT Prophylaxis</label><input id="tx_dvt" placeholder="B/L DVT pump" /></div>
+        <div class="field"><label>Positioning</label><input id="tx_positioning" placeholder="Head elevation 50–60°" /></div>
+        <div class="field"><label>Other</label><input id="tx_other" placeholder="" /></div>
+      </div>
+    </div>
+
+    <!-- CAUSE OF DEATH -->
+    <div class="form-section">
+      <div class="section-title">Cause of Death</div>
+      <div class="cod-row"><div class="cod-label">1A:</div><div class="field" style="margin:0"><input id="cod_1a" placeholder="Malignant cerebral edema" /></div></div>
+      <div class="cod-row"><div class="cod-label">1B:</div><div class="field" style="margin:0"><input id="cod_1b" placeholder="Acute Subdural Haemorrhage" /></div></div>
+      <div class="cod-row"><div class="cod-label">1C:</div><div class="field" style="margin:0"><input id="cod_1c" placeholder="Road Traffic Accident (MLC)" /></div></div>
+    </div>
+
+    <!-- SIGNATORIES -->
+    <div class="form-section">
+      <div class="section-title">Signatories</div>
+      <div class="form-grid cols-2">
+        <div class="field"><label>Additional Professor</label><input id="sig_prof" placeholder="Dr. Sadik Mohammed" /></div>
+        <div class="field"><label>Senior Resident</label><input id="sig_sr" placeholder="Dr. Rajesh M" /></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────
+// INVESTIGATION TABLE SETUP
+// ─────────────────────────────────────────
+const INV_PARAMS = [
+  { key: 'hb_tlc_plt', label: 'HB/TLC/PLT' },
+  { key: 'pt_inr',     label: 'PT/INR' },
+  { key: 'urea_cr',    label: 'UREA/S.CR' },
+  { key: 'na_k',       label: 'Na/K' },
+  { key: 'tb_db',      label: 'TB/DB' },
+  { key: 'tp_alb',     label: 'TP/A' },
+  { key: 'ast_alt_alp',label: 'AST/ALT/ALP' },
+];
+
+let invDates = ['21/04', '23/04', '24/04', '25/04', '26/04'];
+let invData = {}; // { paramKey: { date: value } }
+
+INV_PARAMS.forEach(p => { invData[p.key] = {}; });
+
+function renderInvTable() {
+  const dateRow = document.getElementById('dateRow');
+  // Remove old date headers (keep first th)
+  while (dateRow.children.length > 1) dateRow.removeChild(dateRow.lastChild);
+  invDates.forEach((d, i) => {
+    const th = document.createElement('th');
+    th.innerHTML = `<input class="date-header-input" data-idx="${i}" value="${d}" placeholder="DD/MM" />`;
+    dateRow.appendChild(th);
+  });
+
+  const tbody = document.getElementById('invBody');
+  tbody.innerHTML = '';
+  INV_PARAMS.forEach(p => {
+    const tr = document.createElement('tr');
+    let html = `<td>${p.label}</td>`;
+    invDates.forEach((d, i) => {
+      const val = invData[p.key][d] || '';
+      html += `<td><input data-param="${p.key}" data-idx="${i}" value="${val}" placeholder="—" /></td>`;
+    });
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+
+  // Bind date header edits
+  document.querySelectorAll('.date-header-input').forEach(inp => {
+    inp.addEventListener('change', e => {
+      const idx = +e.target.dataset.idx;
+      const oldDate = invDates[idx];
+      const newDate = e.target.value.trim();
+      // Migrate data
+      INV_PARAMS.forEach(p => {
+        if (invData[p.key][oldDate] !== undefined) {
+          invData[p.key][newDate] = invData[p.key][oldDate];
+          delete invData[p.key][oldDate];
+        }
+      });
+      invDates[idx] = newDate;
+    });
+  });
+
+  // Bind cell edits
+  document.querySelectorAll('#invBody input').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const param = e.target.dataset.param;
+      const idx = +e.target.dataset.idx;
+      invData[param][invDates[idx]] = e.target.value;
+    });
+  });
+}
+
+document.getElementById('addColBtn').addEventListener('click', () => {
+  invDates.push('');
+  renderInvTable();
+  // Focus the new date header
+  const headers = document.querySelectorAll('.date-header-input');
+  headers[headers.length - 1].focus();
+});
+
+renderInvTable();
+
+// Pre-fill default investigation data
+const defaultInvData = {
+  hb_tlc_plt:  { '21/04': '—',           '23/04': '8.2/10.59/86', '24/04': '8.2/18.30/117', '25/04': '8.7/19.11/166', '26/04': '8.7/15.41/201' },
+  pt_inr:      { '21/04': '1.78',         '23/04': '—',            '24/04': '—',              '25/04': '—',              '26/04': '—' },
+  urea_cr:     { '21/04': '136.8/3.70',   '23/04': '120.6/2.25',  '24/04': '131.3/2.02',     '25/04': '129.6/1.58',    '26/04': '127.2/2.93' },
+  na_k:        { '21/04': '157/4.48',     '23/04': '151/4.74',    '24/04': '153/4.96',       '25/04': '—',              '26/04': '149/4.32' },
+  tb_db:       { '21/04': '0.62/0.21',    '23/04': '0.78/0.27',   '24/04': '0.48/0.15',      '25/04': '—',              '26/04': '0.63/0.22' },
+  tp_alb:      { '21/04': '4.94/2.48',    '23/04': '5.38/2.46',   '24/04': '5.30/2.49',      '25/04': '—',              '26/04': '5.13/2.37' },
+  ast_alt_alp: { '21/04': '82.6/86.1/86', '23/04': '61.1/73.7/100','24/04': '153.6/116.1/129','25/04': '—',             '26/04': '62.7/73.6/84' },
+};
+Object.assign(invData, defaultInvData);
+renderInvTable();
+
+// ─────────────────────────────────────────
+// FILE UPLOAD
+// ─────────────────────────────────────────
+let uploadedFiles = [];
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileList  = document.getElementById('fileList');
+const parseBtn  = document.getElementById('parseBtn');
+const statusBar = document.getElementById('statusBar');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  handleFiles([...e.dataTransfer.files]);
+});
+fileInput.addEventListener('change', e => handleFiles([...e.target.files]));
+
+function handleFiles(files) {
+  files.forEach(f => { if (!uploadedFiles.find(x => x.name === f.name)) uploadedFiles.push(f); });
+  renderFileList();
+}
+
+function renderFileList() {
+  fileList.innerHTML = '';
+  uploadedFiles.forEach((f, i) => {
+    const ext = f.name.split('.').pop().toLowerCase();
+    const icon = { html: '🌐', pdf: '📄', docx: '📝', doc: '📝', txt: '📃' }[ext] || '📎';
+    const size = f.size < 1024 ? f.size + 'B' : f.size < 1048576 ? (f.size/1024).toFixed(1)+'KB' : (f.size/1048576).toFixed(1)+'MB';
+    const div = document.createElement('div');
+    div.className = 'file-item';
+    div.innerHTML = `<span class="file-item-icon">${icon}</span><span class="file-item-name">${f.name}</span><span class="file-item-size">${size}</span><button class="file-item-remove" data-idx="${i}">✕</button>`;
+    fileList.appendChild(div);
+  });
+  fileList.querySelectorAll('.file-item-remove').forEach(btn => {
+    btn.addEventListener('click', e => {
+      uploadedFiles.splice(+e.target.dataset.idx, 1);
+      renderFileList();
+    });
+  });
+  parseBtn.disabled = uploadedFiles.length === 0;
+}
+
+function setStatus(msg, type='info') {
+  statusBar.textContent = msg;
+  statusBar.className = 'status-bar ' + type;
+}
+
+// ─────────────────────────────────────────
+// CLAUDE API — PARSE FILES
+// ─────────────────────────────────────────
+parseBtn.addEventListener('click', async () => {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { showToast('Please enter your Anthropic API key', 'error'); return; }
+  if (!uploadedFiles.length) return;
+
+  parseBtn.disabled = true;
+  parseBtn.querySelector('.btn-parse-inner').innerHTML = '<span class="spinner"></span> Extracting...';
+  setStatus('Reading files and extracting clinical data...', 'info');
+
+  try {
+    const contents = await Promise.all(uploadedFiles.map(readFileAsBase64));
+    const messages = [];
+    const contentParts = [];
+
+    for (let i = 0; i < uploadedFiles.length; i++) {
+      const f = uploadedFiles[i];
+      const ext = f.name.split('.').pop().toLowerCase();
+      if (['pdf'].includes(ext)) {
+        contentParts.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: contents[i] } });
+      } else if (['html', 'txt'].includes(ext)) {
+        const text = await uploadedFiles[i].text();
+        contentParts.push({ type: 'text', text: `=== FILE: ${f.name} ===\n${text}` });
+      } else if (['docx', 'doc'].includes(ext)) {
+        contentParts.push({ type: 'text', text: `[Binary file ${f.name} uploaded — extract any visible text data]` });
+      }
+    }
+
+    contentParts.push({
+      type: 'text',
+      text: `Extract ALL clinical data from the above patient record(s) and return ONLY a JSON object with these exact keys. Use empty string "" if not found. For investigations, extract date-wise values.
+
+{
+  "cr_no": "",
+  "pt_name": "",
+  "age_sex": "",
+  "bed_no": "",
+  "father_name": "",
+  "district": "",
+  "ward": "",
+  "category": "",
+  "adm_no": "",
+  "adm_date": "",
+  "dod": "",
+  "tod": "",
+  "dx1": "",
+  "dx2": "",
+  "dx3": "",
+  "hopi": "",
+  "aicu_course": "",
+  "tx_vasopressors": "",
+  "tx_antibiotics": "",
+  "tx_neuro": "",
+  "tx_hormonal": "",
+  "tx_ulcer": "",
+  "tx_dvt": "",
+  "tx_positioning": "",
+  "tx_other": "",
+  "cod_1a": "",
+  "cod_1b": "",
+  "cod_1c": "",
+  "sig_prof": "",
+  "sig_sr": "",
+  "investigations": {
+    "dates": [],
+    "hb_tlc_plt": [],
+    "pt_inr": [],
+    "urea_cr": [],
+    "na_k": [],
+    "tb_db": [],
+    "tp_alb": [],
+    "ast_alt_alp": []
+  }
+}
+
+Return ONLY the JSON object, no markdown, no explanation.`
+    });
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: contentParts }]
+      })
+    });
+
+    if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+    const data = await resp.json();
+    const text = data.content.map(b => b.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    fillForm(parsed);
+    setStatus('✓ Data extracted successfully. Review and edit before generating.', 'success');
+    showToast('Form auto-filled from uploaded files!', 'success');
+  } catch(err) {
+    setStatus('Error: ' + err.message, 'error');
+    showToast('Extraction failed: ' + err.message, 'error');
+  } finally {
+    parseBtn.disabled = false;
+    parseBtn.querySelector('.btn-parse-inner').innerHTML = '⚡ Extract &amp; Auto-Fill Form';
+  }
+});
+
+async function readFileAsBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+function fillForm(d) {
+  const fields = ['cr_no','pt_name','age_sex','bed_no','father_name','district','ward','category',
+    'adm_no','adm_date','dod','tod','dx1','dx2','dx3','hopi','aicu_course',
+    'tx_vasopressors','tx_antibiotics','tx_neuro','tx_hormonal','tx_ulcer','tx_dvt','tx_positioning','tx_other',
+    'cod_1a','cod_1b','cod_1c','sig_prof','sig_sr'];
+  fields.forEach(k => { if (d[k]) { const el = document.getElementById(k); if (el) el.value = d[k]; } });
+
+  if (d.investigations && d.investigations.dates && d.investigations.dates.length) {
+    invDates = d.investigations.dates;
+    INV_PARAMS.forEach(p => {
+      invData[p.key] = {};
+      const vals = d.investigations[p.key] || [];
+      invDates.forEach((date, i) => { invData[p.key][date] = vals[i] || ''; });
+    });
+    renderInvTable();
+  }
+}
+
+// ─────────────────────────────────────────
+// DOCX GENERATION
+// ─────────────────────────────────────────
+document.getElementById('generateBtn').addEventListener('click', generateDocx);
+
+function getVal(id) { return (document.getElementById(id)?.value || '').trim(); }
+
+async function generateDocx() {
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="border-top-color:#0a1a10"></span> Generating...';
+
+  try {
+    const {
+      Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+      AlignmentType, WidthType, BorderStyle, ShadingType,
+      VerticalAlign, PageBreak, HeadingLevel
+    } = docx;
+
+    const border = { style: BorderStyle.SINGLE, size: 4, color: 'auto' };
+    const borders = { top: border, bottom: border, left: border, right: border };
+
+    function cell(text, opts = {}) {
+      const { bold=false, color='126295', sz=20, width=1702, colSpan, shading } = opts;
+      const runs = [];
+      if (typeof text === 'string') {
+        runs.push(new TextRun({ text, bold, color, size: sz, font: 'Times New Roman' }));
+      } else {
+        runs.push(...text);
+      }
+      const tcPr = { width: { size: width, type: WidthType.DXA }, borders };
+      if (colSpan) tcPr.columnSpan = colSpan;
+      if (shading) tcPr.shading = shading;
+      return new TableCell({ ...tcPr, children: [new Paragraph({ spacing: { before: 0, after: 0 }, children: runs })] });
+    }
+
+    // ── Patient details table ──
+    const ptTable = new Table({
+      width: { size: 9026, type: WidthType.DXA },
+      columnWidths: [3114, 2409, 3503],
+      rows: [new TableRow({ children: [
+        cell([
+          new TextRun({ text: 'CR No.: ', color: '126295', size: 20, font: 'Times New Roman' }),
+          new TextRun({ text: getVal('cr_no'), color: '000000', size: 18, font: 'Times New Roman' }),
+          new TextRun({ text: '\nFather Name: ', color: '126295', size: 20, font: 'Times New Roman', break: 1 }),
+          new TextRun({ text: getVal('father_name'), color: '000000', size: 20, font: 'Times New Roman' }),
+          new TextRun({ text: '\nWard: ', color: '126295', size: 20, font: 'Times New Roman', break: 1 }),
+          new TextRun({ text: getVal('ward') || 'AICU', color: '000000', size: 20, font: 'Times New Roman' }),
+          new TextRun({ text: '\nPatient Category: ', color: '126295', size: 20, font: 'Times New Roman', break: 1 }),
+          new TextRun({ text: getVal('category'), color: '000000', size: 20, font: 'Times New Roman' }),
+          new TextRun({ text: '\nDepartment Unit: ', color: '126295', size: 20, font: 'Times New Roman', break: 1 }),
+          new TextRun({ text: 'Anaesthesiology And Critical Care', color: '000000', size: 20, font: 'Times New Roman' }),
+        ], { width: 3114 }),
+        cell([
+          new TextRun({ text: 'Name: ', color: '126295', size: 20, font: 'Times New Roman' }),
+          new TextRun({ text: getVal('pt_name'), color: '000000', size: 20, font: 'Times New Roman' }),
+          new TextRun({ text: '\nDistrict : ', color: '126295', size: 20, font: 'Times New Roman', break: 1 }),
+          new TextRun({ text: getVal('district'), color: '000000', size: 20, font: 'Times New Roman' }),
+          new TextRun({ text: '\nRoom: ', color: '126295', size: 20, font: 'Times New Roman', break: 1 }),
+          new TextRun({ text: getVal('ward') || 'AICU', color: '000000', size: 20, font: 'Times New Roman' }),
+        ], { width: 2409 }),
+        cell([
+          new TextRun({ text: 'Age / Gender: ', color: '126295', size: 20, font: 'Times New Roman' }),
+          new TextRun({ text: getVal('age_sex'), color: '000000', size: 20, font: 'Times New Roman' }),
+          new TextRun({ text: '\nAdm. No: ', color: '126295', size: 20, font: 'Times New Roman', break: 1 }),
+          new TextRun({ text: getVal('adm_no'), color: '000000', size: 18, font: 'Times New Roman' }),
+          new TextRun({ text: '\nBed: ', color: '126295', size: 20, font: 'Times New Roman', break: 1 }),
+          new TextRun({ text: getVal('bed_no'), color: '000000', size: 20, font: 'Times New Roman' }),
+          new TextRun({ text: '\nAdmitted On: ', color: '126295', size: 20, font: 'Times New Roman', break: 1 }),
+          new TextRun({ text: getVal('adm_date'), color: '000000', size: 18, font: 'Times New Roman' }),
+        ], { width: 3503 }),
+      ]})]
+    });
+
+    // ── Investigation table ──
+    const colW = Math.floor(8800 / (1 + invDates.length));
+    const labelW = 1800;
+    const dataW = Math.floor((8800 - labelW) / invDates.length);
+
+    function invCell(text, bold=false) {
+      return new TableCell({
+        width: { size: dataW, type: WidthType.DXA },
+        borders,
+        children: [new Paragraph({
+          spacing: { before: 0, after: 0 },
+          children: [new TextRun({ text: text || '—', bold, size: 16, font: 'Calibri' })]
+        })]
+      });
+    }
+    function invLabelCell(text) {
+      return new TableCell({
+        width: { size: labelW, type: WidthType.DXA },
+        borders,
+        shading: { fill: 'F5F5F5', type: ShadingType.CLEAR },
+        children: [new Paragraph({
+          spacing: { before: 0, after: 0 },
+          children: [new TextRun({ text, bold: true, size: 16, font: 'Calibri' })]
+        })]
+      });
+    }
+
+    const invRows = [];
+    // Header row
+    invRows.push(new TableRow({ children: [
+      invLabelCell('DATE'),
+      ...invDates.map(d => invCell(d, true))
+    ]}));
+    // Data rows
+    INV_PARAMS.forEach(p => {
+      invRows.push(new TableRow({ children: [
+        invLabelCell(p.label),
+        ...invDates.map(d => invCell(invData[p.key][d] || '—'))
+      ]}));
+    });
+
+    const invTable = new Table({
+      width: { size: 9026, type: WidthType.DXA },
+      columnWidths: [labelW, ...invDates.map(() => dataW)],
+      rows: invRows
+    });
+
+    // ── Helpers ──
+    function boldPara(label, value, spacing=160) {
+      return new Paragraph({
+        spacing: { before: spacing, after: 0 },
+        children: [
+          new TextRun({ text: label + ': ', bold: true, size: 22, font: 'Calibri' }),
+          new TextRun({ text: value, size: 22, font: 'Calibri' }),
+        ]
+      });
+    }
+    function heading(text) {
+      return new Paragraph({
+        spacing: { before: 200, after: 80 },
+        children: [new TextRun({ text, bold: true, underline: {}, size: 22, font: 'Calibri' })]
+      });
+    }
+    function body(text) {
+      return new Paragraph({
+        spacing: { before: 0, after: 0 },
+        children: [new TextRun({ text, size: 20, font: 'Calibri' })]
+      });
+    }
+    function boldLabel(label, text) {
+      return new Paragraph({
+        spacing: { before: 60, after: 0 },
+        children: [
+          new TextRun({ text: label + ': ', bold: true, size: 20, font: 'Calibri' }),
+          new TextRun({ text, size: 20, font: 'Calibri' })
+        ]
+      });
+    }
+
+    const dod = getVal('dod');
+    const tod = getVal('tod');
+    const deathStr = dod + (tod ? ' at ' + tod : '');
+
+    const doc = new Document({
+      sections: [{
+        properties: {
+          page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } }
+        },
+        children: [
+          // Title
+          new Paragraph({ spacing: { before: 0, after: 0 }, alignment: AlignmentType.CENTER, children: [
+            new TextRun({ text: 'DEPARTMENT OF ANAESTHESIOLOGY AND CRITICAL CARE', bold: true, underline: {}, size: 28, font: 'Calibri' })
+          ]}),
+          new Paragraph({ spacing: { before: 0, after: 0 }, alignment: AlignmentType.CENTER, children: [
+            new TextRun({ text: 'ALL INDIA INSTITUTE OF MEDICAL SCIENCES, JODHPUR', bold: true, underline: {}, size: 28, font: 'Calibri' })
+          ]}),
+          new Paragraph({ spacing: { before: 0, after: 100 }, alignment: AlignmentType.CENTER, children: [
+            new TextRun({ text: 'AICU SUMMARY', bold: true, underline: {}, size: 28, font: 'Calibri' })
+          ]}),
+
+          // Patient table
+          ptTable,
+
+          // Diagnosis
+          new Paragraph({ spacing: { before: 120, after: 40 }, children: [new TextRun({ text: 'Diagnosis:', bold: true, size: 22, font: 'Calibri' })] }),
+          new Paragraph({ spacing: { before: 0, after: 0 }, children: [new TextRun({ text: '1. ' + getVal('dx1'), bold: true, size: 20, font: 'Calibri' })] }),
+          new Paragraph({ spacing: { before: 0, after: 0 }, children: [new TextRun({ text: '2. ' + getVal('dx2'), bold: true, size: 20, font: 'Calibri' })] }),
+          new Paragraph({ spacing: { before: 0, after: 0 }, children: [new TextRun({ text: '3. ' + getVal('dx3'), bold: true, size: 20, font: 'Calibri' })] }),
+
+          // HOPI
+          new Paragraph({ spacing: { before: 120, after: 40 }, children: [new TextRun({ text: 'History of Present Illness (HOPI):', bold: true, size: 22, font: 'Calibri' })] }),
+          body(getVal('hopi')),
+
+          // AICU Course
+          new Paragraph({ spacing: { before: 120, after: 40 }, children: [new TextRun({ text: 'AICU Course:', bold: true, size: 22, font: 'Calibri' })] }),
+          body(getVal('aicu_course')),
+          ...(deathStr ? [new Paragraph({ spacing: { before: 60, after: 0 }, children: [new TextRun({ text: `The patient was declared deceased on ${deathStr}.`, size: 20, font: 'Calibri' })] })] : []),
+
+          // Investigations
+          new Paragraph({ spacing: { before: 160, after: 80 }, children: [new TextRun({ text: 'INVESTIGATION:', bold: true, underline: {}, size: 22, font: 'Calibri' })] }),
+          invTable,
+
+          // Treatment
+          new Paragraph({ spacing: { before: 160, after: 80 }, children: [new TextRun({ text: 'TREATMENT HISTORY', bold: true, underline: {}, size: 22, font: 'Calibri' })] }),
+          ...[
+            ['Vasopressors', getVal('tx_vasopressors')],
+            ['Antimicrobials', getVal('tx_antibiotics')],
+            ['Neuroprotective', getVal('tx_neuro')],
+            ['Hormonal', getVal('tx_hormonal')],
+            ['Ulcer Prophylaxis', getVal('tx_ulcer')],
+            ['DVT Prophylaxis', getVal('tx_dvt')],
+            ['Positioning', getVal('tx_positioning')],
+            ...(getVal('tx_other') ? [['Other', getVal('tx_other')]] : []),
+          ].filter(([,v]) => v).map(([k,v]) => boldLabel(k, v)),
+
+          // Cause of death
+          new Paragraph({ spacing: { before: 160, after: 80 }, children: [new TextRun({ text: 'CAUSE OF DEATH:', bold: true, underline: {}, size: 22, font: 'Calibri' })] }),
+          new Paragraph({ spacing: { before: 0, after: 0 }, children: [new TextRun({ text: '1A:  ' + getVal('cod_1a'), bold: true, size: 20, font: 'Calibri' })] }),
+          new Paragraph({ spacing: { before: 0, after: 0 }, children: [new TextRun({ text: '1B:  ' + getVal('cod_1b'), bold: true, size: 20, font: 'Calibri' })] }),
+          new Paragraph({ spacing: { before: 0, after: 0 }, children: [new TextRun({ text: '1C:  ' + getVal('cod_1c'), bold: true, size: 20, font: 'Calibri' })] }),
+
+          // Spacer
+          new Paragraph({ spacing: { before: 200, after: 0 }, children: [] }),
+
+          // Signatories
+          new Paragraph({ spacing: { before: 0, after: 0 }, children: [
+            new TextRun({ text: 'ADDITIONAL PROFESSOR', bold: true, size: 20, font: 'Calibri' }),
+            new TextRun({ text: '                                                                          ', size: 20 }),
+            new TextRun({ text: 'SENIOR RESIDENT', bold: true, size: 20, font: 'Calibri' }),
+          ]}),
+          new Paragraph({ spacing: { before: 40, after: 0 }, children: [
+            new TextRun({ text: getVal('sig_prof') || 'Dr. Sadik Mohammed', bold: true, size: 20, font: 'Calibri' }),
+            new TextRun({ text: '                                                                                     ', size: 20 }),
+            new TextRun({ text: getVal('sig_sr') || 'Dr. Rajesh M', bold: true, size: 20, font: 'Calibri' }),
+          ]}),
+        ]
+      }]
+    });
+
+    const buffer = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(buffer);
+    const a = document.createElement('a');
+    const ptName = getVal('pt_name').replace(/\s+/g, '_') || 'patient';
+    a.href = url; a.download = `Death_Summary_${ptName}.docx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✓ DOCX downloaded successfully!', 'success');
+  } catch(err) {
+    showToast('Generation failed: ' + err.message, 'error');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '📄 Generate DOCX';
+  }
+}
+
+// ─────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────
+function showToast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+// ─────────────────────────────────────────
+// DOWNLOAD APP AS HTML
+// ─────────────────────────────────────────
+document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
+  const html = document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'AICU_Death_Summary_Generator.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('App downloaded — open in any browser to use offline!', 'success');
+});
+</script>
+</body>
+</html>
